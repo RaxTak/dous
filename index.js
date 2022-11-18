@@ -1,5 +1,6 @@
 const Discord = require("discord.js");
 const fs = require('node:fs')
+const keepAlive = require('./uptime_settings')
 const path = require('node:path')
 const { REST } = require('@discordjs/rest')
 const client = new Discord.Client({
@@ -7,7 +8,6 @@ const client = new Discord.Client({
     Discord.GatewayIntentBits.Guilds
   ]
 });
-
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
@@ -25,6 +25,10 @@ client.generalCommands = new Discord.Collection();
 const generalCommandsPath = path.join(__dirname, 'commands/general');
 const generalCommandFiles = fs.readdirSync(generalCommandsPath).filter(file => file.endsWith('.js'));
 
+
+const funCommandsPath = path.join(__dirname, 'commands/fun');
+const funCommandFiles = fs.readdirSync(funCommandsPath).filter(file => file.endsWith('.js'));
+
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 for (const file of generalCommandFiles) {
   const filePath = path.join(generalCommandsPath, file);
@@ -33,8 +37,16 @@ for (const file of generalCommandFiles) {
   cmds.push(command.data)
 }
 
+for (const funfile of funCommandFiles) {
+  const funfilePath = path.join(funCommandsPath, funfile);
+  const funcommand = require(funfilePath);
+  client.generalCommands.set(funcommand.data.name, funcommand);
+  cmds.push(funcommand.data)
+}
+
 rest.put(Discord.Routes.applicationGuildCommands(process.env.CLIENT_ID, '1041352636324134993'), { body: cmds })
   .then((data) => console.log(`Successfully registered ${data.length} commands.`))
   .catch(console.error);
 
-client.login(process.env.TOKEN)
+keepAlive();
+client.login(process.env.TOKEN);
